@@ -34,4 +34,10 @@ try {
 
 app.listen(PORT, () => {
   console.log(`SSO Checker server running on http://localhost:${PORT}`)
+
+  // Trigger background imports after server is ready (non-blocking)
+  ;(async () => {
+    const { runAutoImport } = await import('./db.js')
+    await runAutoImport()
+  })().catch(e => console.error('Auto-import startup error:', e))
 })

@@ -20,7 +20,7 @@ for (const file of files) {
   db.exec(sql)
 }
 
-// Seed data
+// Seed manual data (runs only when DB is empty)
 const count = (db.prepare('SELECT COUNT(*) as c FROM sso_apps').get() as { c: number }).c
 if (count === 0) {
   const { SEED_APPS } = await import('./sso/seed-data.js')
@@ -41,3 +41,51 @@ if (count === 0) {
 }
 
 export default db
+
+// Auto-import on startup (runs async, does not block server start)
+export async function runAutoImport() {
+  const { runImport } = await import('./importers/runner.js')
+  const { importKeycloak } = await import('./importers/keycloak.js')
+  const WEEK_IN_SECONDS = 7 * 24 * 60 * 60
+
+  function lastImportAge(source: string): number {
+    const row = db.prepare(`
+      SELECT finished_at FROM sso_import_log
+      WHERE source = ? AND status IN ('done', 'done_with_errors')
+      ORDER BY finished_at DESC LIMIT 1
+    `).get(source) as { finished_at: number } | undefined
+    if (!row?.finished_at) return Infinity
+    return Math.floor(Date.now() / 1000) - row.finished_at
+  }
+
+  // Always apply Keycloak/Ping rules (no credentials needed, fast)
+  const keycloakAge = lastImportAge('keycloak')
+  if (keycloakAge > WEEK_IN_SECONDS) {
+    console.log('Auto-import: applying Keycloak/Ping compatibility rules...')
+    await importKeycloak(db)
+  }
+
+  // Entra import — only if credentials are configured
+  const hasEntraCreds = !!(process.env.ENTRA_TENANT_ID && process.env.ENTRA_CLIENT_ID && process.env.ENTRA_CLIENT_SECRET)
+  if (hasEntraCreds && lastImportAge('entra') > WEEK_IN_SECONDS) {
+    console.log('Auto-import: starting Microsoft Entra App Gallery import...')
+    runImport('entra').then(results => {
+      const r = results[0]
+      console.log(`Auto-import Entra done: +${r.appsAdded} added, ~${r.appsUpdated} updated`)
+    }).catch(e => console.error('Auto-import Entra failed:', e))
+  } else if (!hasEntraCreds) {
+    console.log('Auto-import: Entra skipped (ENTRA_TENANT_ID/CLIENT_ID/CLIENT_SECRET not set)')
+  }
+
+  // Okta import — only if credentials are configured
+  const hasOktaCreds = !!(process.env.OKTA_DOMAIN && process.env.OKTA_API_TOKEN)
+  if (hasOktaCreds && lastImportAge('okta') > WEEK_IN_SECONDS) {
+    console.log('Auto-import: starting Okta OIN import...')
+    runImport('okta').then(results => {
+      const r = results[0]
+      console.log(`Auto-import Okta done: +${r.appsAdded} added, ~${r.appsUpdated} updated`)
+    }).catch(e => console.error('Auto-import Okta failed:', e))
+  } else if (!hasOktaCreds) {
+    console.log('Auto-import: Okta skipped (OKTA_DOMAIN/OKTA_API_TOKEN not set)')
+  }
+}
