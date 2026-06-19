@@ -33,7 +33,7 @@ function parseToc(yaml: string): TocEntry[] {
     const hrefMatch = line.match(/^href:\s*(.+)$/)
     if (hrefMatch) {
       const href = hrefMatch[1].trim()
-      if (href.endsWith('-tutorial.md') && pendingName) {
+      if (href.endsWith('-tutorial.md') && !href.includes('provisioning') && pendingName) {
         entries.push({ name: pendingName, href })
       }
       pendingName = null
