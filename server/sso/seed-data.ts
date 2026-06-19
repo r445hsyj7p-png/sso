@@ -1653,15 +1653,18 @@ export const SEED_APPS = [
     app_name: 'Cato Networks',
     vendor: 'Cato Networks',
     description: 'Cloud-native SASE platform combining SD-WAN, security, and zero-trust network access.',
-    oidc: 1, oauth2: 0, saml2: 0, scim: 0, ldap: 0, kerberos: 0, ws_federation: 0, cas: 0,
+    oidc: 1, oauth2: 0, saml2: 0, scim: 1, ldap: 0, kerberos: 0, ws_federation: 0, cas: 0,
     entra_id: 1, okta: 1, ping: 1, keycloak: 1, auth0: 0, onelogin: 1, forgerock: 0,
     license_requirement: 'standard',
-    implementation_notes: 'OIDC-only SSO — SAML is explicitly not supported. SSO covers both the Cato Management Application and Client authentication. Supported IdPs include Okta, Microsoft Entra ID, and Google. Configuration via Cato Management Application under Access > SSO.',
+    implementation_notes: 'OIDC-only SSO — SAML is explicitly not supported. SSO covers both the Cato Management Application and Client authentication. Natively supported IdPs include Okta, Microsoft Entra ID, Google, and DTS Identity (German IAM/CIAM platform by DTS Systeme, added May 2026). User provisioning via SCIM for automated sync from the IdP. Configuration via Cato Management Application under Access > SSO.',
     source_urls: JSON.stringify([
       { title: 'Cato SSO Authentication Overview', url: 'https://support.catonetworks.com/hc/en-us/articles/12710415750557-SSO-Authentication-for-Users-with-Cato' },
       { title: 'Supported Identity Providers for SSO', url: 'https://support.catonetworks.com/hc/en-us/articles/32111432705821-Supported-Identity-Providers-for-SSO-Authentication' },
+      { title: 'Configuring DTS Identity SSO for Cato', url: 'https://support.catonetworks.com/hc/en-us/articles/36170741510045-Configuring-DTS-Identity-SSO-for-your-Account' },
+      { title: 'Provisioning Users with SCIM', url: 'https://support.catonetworks.com/hc/en-us/articles/13651160092701-Provisioning-Users-with-SCIM' },
+      { title: 'DTS Identity Platform', url: 'https://www.dts.de/en/security-software-by-dts/solutions-services/dts-identity' },
     ]),
-    confidence: 88,
+    confidence: 90,
   },
 
   // === RANCHER ===
