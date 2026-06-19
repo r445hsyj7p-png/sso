@@ -77,6 +77,10 @@ function mapEntraApp(raw: any): NormalizedApp {
   }
 }
 
+function isPlaceholder(val: string | undefined): boolean {
+  return !val || val.startsWith('your-') || val === 'undefined' || val === 'null' || val.length < 8
+}
+
 export async function importEntra(db: any): Promise<ImportResult> {
   const tenantId = process.env.ENTRA_TENANT_ID
   const clientId = process.env.ENTRA_CLIENT_ID
@@ -84,6 +88,9 @@ export async function importEntra(db: any): Promise<ImportResult> {
 
   if (!tenantId || !clientId || !clientSecret) {
     throw new Error('Missing ENTRA_TENANT_ID, ENTRA_CLIENT_ID, or ENTRA_CLIENT_SECRET environment variables')
+  }
+  if (isPlaceholder(tenantId) || isPlaceholder(clientId) || isPlaceholder(clientSecret)) {
+    throw new Error('Entra credentials appear to be placeholder values. Set real values from Azure Portal → App registrations.')
   }
 
   const start = Date.now()

@@ -1,11 +1,9 @@
 import type { NormalizedApp, ImportResult } from './types.js'
 import { toAppKey, upsertApp } from './utils.js'
 
-// Okta's internal catalog API (powers okta.com/integrations page)
-const OIN_CATALOG_URL = 'https://www.okta.com/integrations/api/v1/integrations'
-
-// Fallback: Okta Management API (requires OKTA_DOMAIN + OKTA_API_TOKEN)
-const OKTA_MGMT_URL = (domain: string) => `https://${domain}/api/v1/meta/types/app?limit=200`
+// Okta Management API — lists apps configured in the org
+// Requires OKTA_DOMAIN (e.g. dev-123456.okta.com) + OKTA_API_TOKEN
+const OKTA_MGMT_URL = (domain: string) => `https://${domain}/api/v1/apps?limit=200`
 
 interface OINApp {
   name: string
@@ -73,45 +71,12 @@ function mapOktaApp(raw: OINApp): NormalizedApp | null {
   }
 }
 
-async function fetchOINPublicCatalog(): Promise<OINApp[]> {
-  const all: OINApp[] = []
-  let page = 0
-  const limit = 100
-
-  while (true) {
-    const url = `${OIN_CATALOG_URL}?page=${page}&limit=${limit}&sort=name`
-    const res = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'SSO-Capability-Checker/1.0',
-      },
-    })
-
-    if (!res.ok) {
-      throw new Error(`Okta OIN catalog error: ${res.status}`)
-    }
-
-    const data = await res.json() as { integrations?: OINApp[]; data?: OINApp[]; items?: OINApp[] }
-    const items = data.integrations || data.data || data.items || (Array.isArray(data) ? data as OINApp[] : [])
-
-    if (items.length === 0) break
-    all.push(...items)
-
-    if (items.length < limit) break
-    page++
-
-    await new Promise(r => setTimeout(r, 300))
-  }
-
-  return all
-}
-
 async function fetchOktaManagementAPI(): Promise<OINApp[]> {
   const domain = process.env.OKTA_DOMAIN
   const token = process.env.OKTA_API_TOKEN
 
   if (!domain || !token) {
-    throw new Error('OKTA_DOMAIN and OKTA_API_TOKEN required for Management API fallback')
+    throw new Error('OKTA_DOMAIN and OKTA_API_TOKEN are required')
   }
 
   const all: OINApp[] = []
@@ -125,18 +90,24 @@ async function fetchOktaManagementAPI(): Promise<OINApp[]> {
       },
     })
 
-    if (!res.ok) throw new Error(`Okta Management API: ${res.status}`)
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`Okta Management API ${res.status}: ${body.slice(0, 200)}`)
+    }
 
     const data = await res.json() as any[]
+    if (!Array.isArray(data)) break
+
     all.push(...data.map((app: any) => ({
       id: app.id,
       name: app.name,
       displayName: app.label || app.name,
       signOnModes: app.signOnMode ? [app.signOnMode] : [],
       features: app.features || [],
+      publisher: app._links?.appLinks?.[0]?.href ? undefined : undefined,
     })))
 
-    // Check Link header for next page
+    // Okta uses Link header for pagination
     const linkHeader = res.headers.get('link')
     const nextMatch = linkHeader?.match(/<([^>]+)>;\s*rel="next"/)
     url = nextMatch ? nextMatch[1] : null
@@ -148,22 +119,17 @@ async function fetchOktaManagementAPI(): Promise<OINApp[]> {
 }
 
 export async function importOkta(db: any): Promise<ImportResult> {
+  const domain = process.env.OKTA_DOMAIN
+  const token = process.env.OKTA_API_TOKEN
+  if (!domain || !token) throw new Error('OKTA_DOMAIN and OKTA_API_TOKEN are required')
+
   const start = Date.now()
   let appsAdded = 0
   let appsUpdated = 0
   const errors: string[] = []
 
-  let rawApps: OINApp[] = []
-
-  // Try public catalog first, fall back to Management API
-  try {
-    rawApps = await fetchOINPublicCatalog()
-    console.log(`Fetched ${rawApps.length} apps from Okta public catalog`)
-  } catch (e) {
-    console.warn(`Okta public catalog failed: ${e}. Trying Management API...`)
-    rawApps = await fetchOktaManagementAPI()
-    console.log(`Fetched ${rawApps.length} apps from Okta Management API`)
-  }
+  const rawApps = await fetchOktaManagementAPI()
+  console.log(`Fetched ${rawApps.length} apps from Okta Management API (${process.env.OKTA_DOMAIN})`)
 
   const upsertMany = db.transaction((apps: NormalizedApp[]) => {
     let added = 0, updated = 0

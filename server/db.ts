@@ -65,8 +65,18 @@ export async function runAutoImport() {
     await importKeycloak(db)
   }
 
-  // Entra import — only if credentials are configured
-  const hasEntraCreds = !!(process.env.ENTRA_TENANT_ID && process.env.ENTRA_CLIENT_ID && process.env.ENTRA_CLIENT_SECRET)
+  // Validate that credential looks real (not a placeholder like "your-tenant-id")
+  function isPlaceholder(val: string): boolean {
+    return !val || val.startsWith('your-') || val === 'undefined' || val === 'null' || val.length < 8
+  }
+
+  // Entra import — only if credentials look real
+  const hasEntraCreds = !!(
+    process.env.ENTRA_TENANT_ID && process.env.ENTRA_CLIENT_ID && process.env.ENTRA_CLIENT_SECRET &&
+    !isPlaceholder(process.env.ENTRA_TENANT_ID) &&
+    !isPlaceholder(process.env.ENTRA_CLIENT_ID) &&
+    !isPlaceholder(process.env.ENTRA_CLIENT_SECRET)
+  )
   if (hasEntraCreds && lastImportAge('entra') > WEEK_IN_SECONDS) {
     console.log('Auto-import: starting Microsoft Entra App Gallery import...')
     runImport('entra').then(results => {
@@ -77,8 +87,12 @@ export async function runAutoImport() {
     console.log('Auto-import: Entra skipped (ENTRA_TENANT_ID/CLIENT_ID/CLIENT_SECRET not set)')
   }
 
-  // Okta import — only if credentials are configured
-  const hasOktaCreds = !!(process.env.OKTA_DOMAIN && process.env.OKTA_API_TOKEN)
+  // Okta import — only if credentials look real
+  const hasOktaCreds = !!(
+    process.env.OKTA_DOMAIN && process.env.OKTA_API_TOKEN &&
+    !isPlaceholder(process.env.OKTA_DOMAIN) &&
+    !isPlaceholder(process.env.OKTA_API_TOKEN)
+  )
   if (hasOktaCreds && lastImportAge('okta') > WEEK_IN_SECONDS) {
     console.log('Auto-import: starting Okta OIN import...')
     runImport('okta').then(results => {
