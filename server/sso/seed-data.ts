@@ -1629,6 +1629,89 @@ export const SEED_APPS = [
     confidence: 92,
   },
 
+  // === NEXTCLOUD ===
+  {
+    app_key: 'nextcloud',
+    app_name: 'Nextcloud',
+    vendor: 'Nextcloud GmbH',
+    description: 'Open-source self-hosted file sync, share and collaboration platform.',
+    oidc: 1, oauth2: 1, saml2: 1, scim: 0, ldap: 1, kerberos: 0, ws_federation: 0, cas: 0,
+    entra_id: 1, okta: 1, ping: 1, keycloak: 1, auth0: 1, onelogin: 1, forgerock: 0,
+    license_requirement: 'standard',
+    implementation_notes: 'SAML 2.0 via the SSO & SAML Authentication app (free, available in Nextcloud App Store). OIDC via the OpenID Connect Login app. LDAP/AD integration built-in via User Auth LDAP app. No SCIM support natively; user provisioning via LDAP or JIT from SAML/OIDC.',
+    source_urls: JSON.stringify([
+      { title: 'Nextcloud SAML SSO App', url: 'https://apps.nextcloud.com/apps/user_saml' },
+      { title: 'Nextcloud LDAP Integration', url: 'https://docs.nextcloud.com/server/latest/admin_manual/configuration_user/user_auth_ldap.html' },
+    ]),
+    confidence: 90,
+  },
+
+  // === CATO NETWORKS ===
+  {
+    app_key: 'cato-networks',
+    app_name: 'Cato Networks',
+    vendor: 'Cato Networks',
+    description: 'Cloud-native SASE platform combining SD-WAN, security, and zero-trust network access.',
+    oidc: 0, oauth2: 0, saml2: 1, scim: 1, ldap: 0, kerberos: 0, ws_federation: 0, cas: 0,
+    entra_id: 1, okta: 1, ping: 1, keycloak: 1, auth0: 0, onelogin: 1, forgerock: 0,
+    license_requirement: 'standard',
+    implementation_notes: 'SAML 2.0 SSO for the Cato Management Application and Client authentication. SCIM provisioning supported for automated user and group sync. Configuration done via Cato Management Application under Access > SSO.',
+    source_urls: JSON.stringify([
+      { title: 'Cato Networks SSO Configuration', url: 'https://support.catonetworks.com/hc/en-us/articles/360019531238' },
+      { title: 'Cato SCIM Provisioning', url: 'https://support.catonetworks.com/hc/en-us/articles/4413280507409' },
+    ]),
+    confidence: 88,
+  },
+
+  // === RANCHER ===
+  {
+    app_key: 'rancher',
+    app_name: 'Rancher',
+    vendor: 'SUSE',
+    description: 'Open-source Kubernetes management platform for deploying and operating clusters.',
+    oidc: 1, oauth2: 1, saml2: 1, scim: 0, ldap: 1, kerberos: 0, ws_federation: 0, cas: 0,
+    entra_id: 1, okta: 1, ping: 1, keycloak: 1, auth0: 1, onelogin: 1, forgerock: 0,
+    license_requirement: 'standard',
+    implementation_notes: 'Supports multiple auth backends natively: SAML (Okta, PingIdentity, ADFS, Keycloak), OIDC (Keycloak, generic), LDAP/AD, and GitHub. Configuration under Global Settings > Authentication. No SCIM support; users are provisioned on first login (JIT). Group membership from IdP is used for RBAC.',
+    source_urls: JSON.stringify([
+      { title: 'Rancher Authentication Configuration', url: 'https://ranchermanager.docs.rancher.com/how-to-guides/new-user-guides/authentication-permissions-and-global-configuration/authentication-config' },
+    ]),
+    confidence: 90,
+  },
+
+  // === INUVIKA ===
+  {
+    app_key: 'inuvika',
+    app_name: 'Inuvika OVD Enterprise',
+    vendor: 'Inuvika',
+    description: 'Virtual desktop and application delivery platform for remote and hybrid work environments.',
+    oidc: 1, oauth2: 1, saml2: 1, scim: 0, ldap: 1, kerberos: 1, ws_federation: 0, cas: 0,
+    entra_id: 1, okta: 1, ping: 1, keycloak: 1, auth0: 0, onelogin: 0, forgerock: 0,
+    license_requirement: 'standard',
+    implementation_notes: 'SAML 2.0 and OIDC supported for web portal and native client authentication. LDAP/Active Directory integration for user directory. Kerberos supported for transparent SSO within Windows environments. No SCIM; user provisioning via LDAP sync.',
+    source_urls: JSON.stringify([
+      { title: 'Inuvika OVD SSO Documentation', url: 'https://www.inuvika.com/resources/documentation/' },
+    ]),
+    confidence: 78,
+  },
+
+  // === CHECKMK ===
+  {
+    app_key: 'checkmk',
+    app_name: 'Checkmk',
+    vendor: 'tribe29 GmbH',
+    description: 'IT infrastructure and application monitoring platform.',
+    oidc: 1, oauth2: 1, saml2: 1, scim: 0, ldap: 1, kerberos: 0, ws_federation: 0, cas: 0,
+    entra_id: 1, okta: 1, ping: 1, keycloak: 1, auth0: 0, onelogin: 0, forgerock: 0,
+    license_requirement: 'standard',
+    implementation_notes: 'SAML 2.0 available in Checkmk 2.0+ (all editions including Free). OIDC supported from Checkmk 2.3+. LDAP/AD user sync built-in for all editions. No SCIM. SSO configured under Setup > Users > SAML Authentication or LDAP connections.',
+    source_urls: JSON.stringify([
+      { title: 'Checkmk SAML SSO', url: 'https://docs.checkmk.com/latest/en/saml.html' },
+      { title: 'Checkmk LDAP Integration', url: 'https://docs.checkmk.com/latest/en/ldap.html' },
+    ]),
+    confidence: 88,
+  },
+
   // === INTERCOM ===
   {
     app_key: 'intercom',
