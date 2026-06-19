@@ -13,11 +13,6 @@ interface App {
   ldap: number
   kerberos: number
   ws_federation: number
-  entra_id: number
-  okta: number
-  ping: number
-  keycloak: number
-  auth0: number
   license_requirement: string
   confidence: number
   [key: string]: any
@@ -56,10 +51,6 @@ export function ResultsTable({ apps, onSelect }: Props) {
             <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">SAML</th>
             <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">SCIM</th>
             <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">LDAP</th>
-            <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Entra</th>
-            <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Okta</th>
-            <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ping</th>
-            <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Keycloak</th>
             <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">License</th>
             <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Confidence</th>
             <th className="px-3 py-3"></th>
@@ -83,10 +74,6 @@ export function ResultsTable({ apps, onSelect }: Props) {
               <td className="px-3 py-3"><ProtocolBadge value={app.saml2} size="sm" /></td>
               <td className="px-3 py-3"><ProtocolBadge value={app.scim} size="sm" /></td>
               <td className="px-3 py-3"><ProtocolBadge value={app.ldap} size="sm" /></td>
-              <td className="px-3 py-3"><ProtocolBadge value={app.entra_id} size="sm" /></td>
-              <td className="px-3 py-3"><ProtocolBadge value={app.okta} size="sm" /></td>
-              <td className="px-3 py-3"><ProtocolBadge value={app.ping} size="sm" /></td>
-              <td className="px-3 py-3"><ProtocolBadge value={app.keycloak} size="sm" /></td>
               <td className="px-3 py-3">
                 <span className={`text-xs font-medium ${LICENSE_BADGE[app.license_requirement] || LICENSE_BADGE.unclear}`}>
                   {LICENSE_SHORT[app.license_requirement] || '?'}

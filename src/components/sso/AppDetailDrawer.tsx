@@ -45,15 +45,6 @@ const PROTOCOLS = [
   { key: 'cas', label: 'CAS' },
 ]
 
-const IDPS = [
-  { key: 'entra_id', label: 'Microsoft Entra ID' },
-  { key: 'okta', label: 'Okta' },
-  { key: 'ping', label: 'Ping Identity' },
-  { key: 'keycloak', label: 'Keycloak' },
-  { key: 'auth0', label: 'Auth0' },
-  { key: 'onelogin', label: 'OneLogin' },
-  { key: 'forgerock', label: 'ForgeRock' },
-]
 
 const LICENSE_LABELS: Record<string, { label: string; color: string }> = {
   standard: { label: 'Standard / All Plans', color: 'text-green-400 bg-green-400/10' },
@@ -101,19 +92,6 @@ export function AppDetailDrawer({ app, onClose }: Props) {
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Authentication Protocols</h3>
             <div className="space-y-2">
               {PROTOCOLS.map(({ key, label }) => (
-                <div key={key} className="flex items-center justify-between py-1.5 border-b border-[hsl(217,32%,17%)] last:border-0">
-                  <span className="text-sm text-gray-300">{label}</span>
-                  <ProtocolBadge value={(app as any)[key]} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Identity Providers */}
-          <div className="mb-6">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Identity Provider Integrations</h3>
-            <div className="space-y-2">
-              {IDPS.map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between py-1.5 border-b border-[hsl(217,32%,17%)] last:border-0">
                   <span className="text-sm text-gray-300">{label}</span>
                   <ProtocolBadge value={(app as any)[key]} />
