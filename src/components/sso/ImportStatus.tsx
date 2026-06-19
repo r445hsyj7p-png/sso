@@ -35,6 +35,7 @@ async function triggerImport(source: string): Promise<void> {
 
 const SOURCE_LABELS: Record<string, string> = {
   manual: 'Curated',
+  'entra-docs': 'Entra Docs',
   entra: 'Microsoft Entra',
   okta: 'Okta OIN',
   keycloak: 'Keycloak/Ping Rules',
@@ -43,7 +44,8 @@ const SOURCE_LABELS: Record<string, string> = {
 
 const IMPORT_SOURCES = [
   { key: 'all', label: 'All Sources' },
-  { key: 'entra', label: 'Microsoft Entra' },
+  { key: 'entra-docs', label: 'Entra Docs (no auth)' },
+  { key: 'entra', label: 'Entra Graph API' },
   { key: 'okta', label: 'Okta OIN' },
   { key: 'keycloak', label: 'Keycloak/Ping Rules' },
 ]

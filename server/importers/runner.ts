@@ -2,9 +2,10 @@ import db from '../db.js'
 import { importEntra } from './entra.js'
 import { importOkta } from './okta.js'
 import { importKeycloak } from './keycloak.js'
+import { importEntraDocs } from './entra-scraper.js'
 import type { ImportResult } from './types.js'
 
-type SourceName = 'entra' | 'okta' | 'keycloak' | 'all'
+type SourceName = 'entra' | 'okta' | 'keycloak' | 'entra-docs' | 'all'
 
 function logStart(source: string): number {
   const result = db.prepare(`
@@ -45,7 +46,7 @@ export async function runImport(source: SourceName): Promise<ImportResult[]> {
   const results: ImportResult[] = []
 
   const sources = source === 'all'
-    ? ['entra', 'okta', 'keycloak'] as const
+    ? ['entra-docs', 'okta', 'keycloak'] as const
     : [source] as const
 
   for (const src of sources) {
@@ -64,6 +65,9 @@ export async function runImport(source: SourceName): Promise<ImportResult[]> {
           break
         case 'keycloak':
           result = await importKeycloak(db)
+          break
+        case 'entra-docs':
+          result = await importEntraDocs(db)
           break
         default:
           throw new Error(`Unknown source: ${src}`)
@@ -89,8 +93,8 @@ export async function runImport(source: SourceName): Promise<ImportResult[]> {
       })
     }
 
-    // After Entra/Okta, apply Keycloak rules automatically
-    if ((src === 'entra' || src === 'okta') && source !== 'all') {
+    // After Entra/Okta/entra-docs, apply Keycloak rules automatically
+    if ((src === 'entra' || src === 'okta' || src === 'entra-docs') && source !== 'all') {
       await importKeycloak(db)
     }
   }
