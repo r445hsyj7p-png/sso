@@ -2,6 +2,7 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
 import SsoChecker from './pages/SsoChecker'
 import Home from './pages/Home'
+import Admin from './pages/Admin'
 
 export default function App() {
   const location = useLocation()
@@ -26,6 +27,16 @@ export default function App() {
               >
                 Checker
               </Link>
+              <Link
+                to="/admin"
+                className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
+                  location.pathname === '/admin'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-[hsl(217,32%,17%)]'
+                }`}
+              >
+                Admin
+              </Link>
             </div>
           </div>
         </div>
@@ -35,6 +46,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/checker" element={<SsoChecker />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
     </div>

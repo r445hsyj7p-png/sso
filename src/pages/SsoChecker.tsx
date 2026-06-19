@@ -10,7 +10,6 @@ import { AnalyzerResults } from '../components/sso/AnalyzerResults'
 import { SupportPageLookup } from '../components/sso/SupportPageLookup'
 import type { AnalyzerResult } from '../components/sso/AnalyzerResults'
 import { searchApps } from '../lib/api'
-import { ImportStatus } from '../components/sso/ImportStatus'
 
 export default function SsoChecker() {
   const [query, setQuery] = useState('')
@@ -28,9 +27,6 @@ export default function SsoChecker() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-1">SSO Capability Checker</h1>
         <p className="text-gray-400 text-sm">Discover SSO protocol support and IdP integrations for enterprise applications</p>
-        <div className="mt-2">
-          <ImportStatus />
-        </div>
       </div>
 
       <Tabs.Root defaultValue="discovery">

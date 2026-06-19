@@ -158,7 +158,35 @@ router.post('/lookup-url/save', async (req, res) => {
   }
 })
 
-// Import status
+// Delete app — only manual entries allowed
+router.delete('/apps/:key', (req, res) => {
+  const app = db.prepare('SELECT app_key, import_source FROM sso_apps WHERE app_key = ?').get(req.params.key) as { app_key: string; import_source: string } | undefined
+  if (!app) return res.status(404).json({ error: 'App not found' })
+  if (app.import_source !== 'manual') return res.status(403).json({ error: 'Only manually created apps can be deleted' })
+  db.prepare('DELETE FROM sso_apps WHERE app_key = ?').run(req.params.key)
+  res.json({ success: true })
+})
+
+// List all apps for admin (paginated)
+router.get('/admin/apps', (req, res) => {
+  const page = Math.max(1, parseInt(String(req.query.page || '1')))
+  const limit = 50
+  const offset = (page - 1) * limit
+  const source = String(req.query.source || '')
+  const q = String(req.query.q || '').trim()
+
+  let where = 'WHERE 1=1'
+  const params: any[] = []
+  if (source) { where += ' AND import_source = ?'; params.push(source) }
+  if (q) { where += ' AND (lower(app_name) LIKE ? OR lower(app_key) LIKE ?)'; params.push(`%${q.toLowerCase()}%`, `%${q.toLowerCase()}%`) }
+
+  const total = (db.prepare(`SELECT COUNT(*) as c FROM sso_apps ${where}`).get(...params) as { c: number }).c
+  const apps = db.prepare(`SELECT app_key, app_name, vendor, import_source, confidence, saml2, oidc, scim, updated_at FROM sso_apps ${where} ORDER BY updated_at DESC, app_name ASC LIMIT ? OFFSET ?`).all(...params, limit, offset)
+
+  res.json({ apps, total, page, pages: Math.ceil(total / limit) })
+})
+
+
 router.get('/import/status', (_req, res) => {
   const status = getImportStatus()
   res.json(status)
