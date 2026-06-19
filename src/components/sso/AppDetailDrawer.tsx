@@ -26,6 +26,7 @@ interface App {
   implementation_notes: string
   source_urls: string
   confidence: number
+  import_source?: string
 }
 
 interface Props {
@@ -92,7 +93,7 @@ export function AppDetailDrawer({ app, onClose }: Props) {
             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${licenseInfo.color}`}>
               {licenseInfo.label}
             </span>
-            <ConfidenceBadge value={app.confidence} />
+            <ConfidenceBadge value={app.confidence} importSource={app.import_source} />
           </div>
 
           {/* Protocols */}

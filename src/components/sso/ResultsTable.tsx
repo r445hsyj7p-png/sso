@@ -92,7 +92,7 @@ export function ResultsTable({ apps, onSelect }: Props) {
                   {LICENSE_SHORT[app.license_requirement] || '?'}
                 </span>
               </td>
-              <td className="px-3 py-3 text-center"><ConfidenceBadge value={app.confidence} /></td>
+              <td className="px-3 py-3 text-center"><ConfidenceBadge value={app.confidence} importSource={app.import_source} /></td>
               <td className="px-3 py-3">
                 <ChevronRight className="h-4 w-4 text-gray-600" />
               </td>
