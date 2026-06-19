@@ -3,6 +3,7 @@ import multer from 'multer'
 import { searchApps } from './discovery.js'
 import { analyzeContent } from './analyzer.js'
 import db from '../db.js'
+import { runImport, getImportStatus } from '../importers/index.js'
 
 const router = Router()
 const upload = multer({
@@ -77,6 +78,33 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     res.json(result)
   } catch (e) {
     res.status(500).json({ error: String(e) })
+  }
+})
+
+// Import status
+router.get('/import/status', (_req, res) => {
+  const status = getImportStatus()
+  res.json(status)
+})
+
+// Trigger import (protected by API key in production)
+router.post('/import/run', async (req, res) => {
+  const apiKey = req.headers['x-api-key'] || req.body?.apiKey
+  const configuredKey = process.env.IMPORT_API_KEY
+
+  if (configuredKey && apiKey !== configuredKey) {
+    return res.status(401).json({ error: 'Invalid API key' })
+  }
+
+  const source = (req.body?.source || 'all') as 'entra' | 'okta' | 'keycloak' | 'all'
+
+  // Run async, return immediately
+  res.json({ message: `Import started for source: ${source}`, source })
+
+  try {
+    await runImport(source)
+  } catch (e) {
+    console.error('Background import error:', e)
   }
 })
 

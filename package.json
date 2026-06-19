@@ -8,7 +8,11 @@
     "dev:client": "vite",
     "build": "vite build",
     "start": "node --import=tsx/esm server/index.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "import:entra": "tsx scripts/import.ts entra",
+    "import:okta": "tsx scripts/import.ts okta",
+    "import:keycloak": "tsx scripts/import.ts keycloak",
+    "import:all": "tsx scripts/import.ts all"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.4",
