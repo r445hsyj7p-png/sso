@@ -111,7 +111,7 @@ router.post('/import/run', async (req, res) => {
     return res.status(401).json({ error: 'Invalid API key' })
   }
 
-  const source = (req.body?.source || 'all') as 'entra' | 'okta' | 'keycloak' | 'entra-docs' | 'all'
+  const source = (req.body?.source || 'all') as 'entra' | 'keycloak' | 'entra-docs' | 'all'
 
   // Run async, return immediately
   res.json({ message: `Import started for source: ${source}`, source })

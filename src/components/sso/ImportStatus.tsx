@@ -37,7 +37,6 @@ const SOURCE_LABELS: Record<string, string> = {
   manual: 'Curated',
   'entra-docs': 'Entra Docs',
   entra: 'Microsoft Entra',
-  okta: 'Okta OIN',
   keycloak: 'Keycloak/Ping Rules',
   ping: 'Ping Identity',
 }
@@ -46,7 +45,6 @@ const IMPORT_SOURCES = [
   { key: 'all', label: 'All Sources' },
   { key: 'entra-docs', label: 'Entra Docs (no auth)' },
   { key: 'entra', label: 'Entra Graph API' },
-  { key: 'okta', label: 'Okta OIN' },
   { key: 'keycloak', label: 'Keycloak/Ping Rules' },
 ]
 
@@ -189,7 +187,7 @@ export function ImportStatus() {
               </p>
             )}
             <p className="mt-2 text-xs text-gray-600">
-              Entra/Okta require credentials in environment variables. Keycloak/Ping rules work without credentials.
+              Entra Graph API requires credentials in environment variables. All other sources work without credentials.
             </p>
           </div>
 
