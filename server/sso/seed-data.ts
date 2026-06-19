@@ -1610,6 +1610,25 @@ export const SEED_APPS = [
     ]),
     confidence: 75,
   },
+  // === PERSONIO ===
+  {
+    app_key: 'personio',
+    app_name: 'Personio',
+    vendor: 'Personio SE & Co. KG',
+    description: 'HR software for small and medium-sized companies (recruiting, onboarding, payroll, time tracking).',
+    oidc: 1, oauth2: 1, saml2: 1, scim: 1, ldap: 0, kerberos: 0, ws_federation: 0, cas: 0,
+    entra_id: 1, okta: 1, ping: 1, keycloak: 1, auth0: 0, onelogin: 1, forgerock: 0,
+    license_requirement: 'enterprise',
+    implementation_notes: 'SAML 2.0 SSO on Professional and Enterprise plans. SCIM provisioning (SCIM 2.0) for automated user management. OIDC available. Supports IdP-initiated and SP-initiated flows. Microsoft Entra ID (Azure AD), Okta, OneLogin and Google Workspace are officially documented IdPs. Personio acts as SP only.',
+    source_urls: JSON.stringify([
+      { title: 'Personio SSO Setup Guide', url: 'https://support.personio.de/hc/en-us/articles/360000507225-Setting-up-Single-Sign-On-SSO' },
+      { title: 'Personio SCIM Provisioning', url: 'https://support.personio.de/hc/en-us/articles/4403370114194-SCIM-User-Provisioning' },
+      { title: 'Microsoft Entra Integration', url: 'https://learn.microsoft.com/en-us/entra/identity/saas-apps/personio-tutorial' },
+      { title: 'Okta Personio Integration', url: 'https://www.okta.com/integrations/personio/' },
+    ]),
+    confidence: 92,
+  },
+
   // === INTERCOM ===
   {
     app_key: 'intercom',

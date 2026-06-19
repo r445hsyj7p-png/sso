@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as Tabs from '@radix-ui/react-tabs'
-import { Search, Upload, Info } from 'lucide-react'
+import { Search, Upload, Info, Globe } from 'lucide-react'
 import { AppSearchForm } from '../components/sso/AppSearchForm'
 import { ResultsTable } from '../components/sso/ResultsTable'
 import { AppDetailDrawer } from '../components/sso/AppDetailDrawer'
 import { AnalyzerUploadZone } from '../components/sso/AnalyzerUploadZone'
 import { AnalyzerResults } from '../components/sso/AnalyzerResults'
+import { SupportPageLookup } from '../components/sso/SupportPageLookup'
 import type { AnalyzerResult } from '../components/sso/AnalyzerResults'
 import { searchApps } from '../lib/api'
 import { ImportStatus } from '../components/sso/ImportStatus'
@@ -48,6 +49,13 @@ export default function SsoChecker() {
             <Upload className="h-4 w-4" />
             Analyzer Mode
           </Tabs.Trigger>
+          <Tabs.Trigger
+            value="lookup"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-gray-400 hover:text-white"
+          >
+            <Globe className="h-4 w-4" />
+            Support Page
+          </Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Content value="discovery" className="space-y-6">
@@ -80,13 +88,28 @@ export default function SsoChecker() {
           )}
 
           {!isLoading && query && apps.length === 0 && (
-            <div className="text-center py-16">
+            <div className="text-center py-12">
               <div className="text-4xl mb-4">🔍</div>
-              <h3 className="text-white font-medium mb-2">No results found</h3>
-              <p className="text-gray-500 text-sm max-w-sm mx-auto">
-                No applications matching "{query}" in the database.
-                Try a different name or use Analyzer Mode to analyze technical artifacts.
+              <h3 className="text-white font-medium mb-2">No results found for "{query}"</h3>
+              <p className="text-gray-500 text-sm max-w-sm mx-auto mb-4">
+                This app is not in the local database yet. You have two options:
               </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="text-left p-4 bg-[hsl(222,84%,8%)] border border-[hsl(217,32%,17%)] rounded-xl max-w-xs">
+                  <div className="flex items-center gap-2 text-emerald-400 font-medium text-sm mb-1">
+                    <Globe className="h-4 w-4" />
+                    Support Page Lookup
+                  </div>
+                  <p className="text-xs text-gray-500">Paste the vendor's SSO docs URL — we'll scan it for protocol keywords automatically.</p>
+                </div>
+                <div className="text-left p-4 bg-[hsl(222,84%,8%)] border border-[hsl(217,32%,17%)] rounded-xl max-w-xs">
+                  <div className="flex items-center gap-2 text-purple-400 font-medium text-sm mb-1">
+                    <Upload className="h-4 w-4" />
+                    Analyzer Mode
+                  </div>
+                  <p className="text-xs text-gray-500">Upload SAML metadata, OIDC discovery docs, or config files for technical analysis.</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -130,6 +153,17 @@ export default function SsoChecker() {
               </div>
             </div>
           )}
+        </Tabs.Content>
+        <Tabs.Content value="lookup" className="space-y-6">
+          <div className="bg-[hsl(222,84%,8%)] border border-[hsl(217,32%,17%)] rounded-xl p-6">
+            <div className="mb-4">
+              <h2 className="text-white font-semibold mb-1">Support Page Lookup</h2>
+              <p className="text-sm text-gray-400">
+                App not in the database? Paste the vendor's SSO documentation URL — the page will be fetched and scanned for protocol keywords, supported Identity Providers, and license hints.
+              </p>
+            </div>
+            <SupportPageLookup />
+          </div>
         </Tabs.Content>
       </Tabs.Root>
 

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { searchApps } from './discovery.js'
 import { analyzeContent } from './analyzer.js'
+import { lookupUrl } from './url-lookup.js'
 import db from '../db.js'
 import { runImport, getImportStatus } from '../importers/index.js'
 
@@ -75,6 +76,20 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     // Save result
     db.prepare('INSERT INTO sso_analyzer_results (filename, result_json) VALUES (?, ?)').run(filename, JSON.stringify(result))
 
+    res.json(result)
+  } catch (e) {
+    res.status(500).json({ error: String(e) })
+  }
+})
+
+// URL Lookup — fetch a vendor support page and extract SSO hints
+router.post('/lookup-url', async (req, res) => {
+  const url = String(req.body?.url || '').trim()
+  if (!url || !url.startsWith('http')) {
+    return res.status(400).json({ error: 'A valid URL is required' })
+  }
+  try {
+    const result = await lookupUrl(url)
     res.json(result)
   } catch (e) {
     res.status(500).json({ error: String(e) })
