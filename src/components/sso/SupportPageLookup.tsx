@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Globe, Loader2, AlertCircle, CheckCircle2, Shield, Building2, Tag, FileText, DatabaseZap } from 'lucide-react'
 import { ConfidenceBadge } from './ConfidenceBadge'
 
@@ -72,6 +73,7 @@ const EXAMPLE_URLS = [
 ]
 
 export function SupportPageLookup() {
+  const queryClient = useQueryClient()
   const [url, setUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<LookupResult | null>(null)
@@ -131,6 +133,8 @@ export function SupportPageLookup() {
       const r = await saveApp({ appName: saveAppName, url: result.url, protocols: saveProtocols, idps: saveIdps })
       setSaveResult(r)
       setShowSave(false)
+      // Invalidate search cache so Discovery mode shows the new app immediately
+      queryClient.invalidateQueries({ queryKey: ['sso-apps'] })
     } catch (e) {
       setSaveError(String(e))
     } finally {
