@@ -96,6 +96,68 @@ router.post('/lookup-url', async (req, res) => {
   }
 })
 
+// Save a lookup result as a verified app entry
+router.post('/lookup-url/save', async (req, res) => {
+  const { appName, url, protocols, idps } = req.body || {}
+  if (!appName || typeof appName !== 'string' || appName.trim().length < 2) {
+    return res.status(400).json({ error: 'appName is required' })
+  }
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'url is required' })
+  }
+
+  const { toAppKey, upsertApp } = await import('../importers/utils.js')
+  const p = protocols || {}
+
+  const idpNames: string[] = Array.isArray(idps) ? idps.map(String) : []
+  const hasEntra = idpNames.some(i => /entra|azure/i.test(i))
+  const hasOkta  = idpNames.some(i => /okta/i.test(i))
+  const hasPing  = idpNames.some(i => /ping/i.test(i))
+  const hasKeycloak = idpNames.some(i => /keycloak/i.test(i))
+  const hasAuth0 = idpNames.some(i => /auth0/i.test(i))
+  const hasOneLogin = idpNames.some(i => /onelogin/i.test(i))
+
+  const hasSaml = p.saml2 ? 1 : 0
+  const hasOidc = p.oidc  ? 1 : 0
+  const standardIdP = hasSaml || hasOidc ? 1 : 0
+
+  const app = {
+    app_key: toAppKey(appName.trim()),
+    app_name: appName.trim(),
+    vendor: null,
+    description: null,
+    oidc:         hasOidc,
+    oauth2:       p.oauth2 ? 1 : hasOidc,
+    saml2:        hasSaml,
+    scim:         p.scim   ? 1 : 0,
+    ldap:         p.ldap   ? 1 : 0,
+    kerberos:     p.kerberos ? 1 : 0,
+    ws_federation: p.ws_federation ? 1 : 0,
+    cas:          p.cas    ? 1 : 0,
+    entra_id:     hasEntra ? 1 : standardIdP,
+    okta:         hasOkta  ? 1 : standardIdP,
+    ping:         hasPing  ? 1 : standardIdP,
+    keycloak:     hasKeycloak ? 1 : standardIdP,
+    auth0:        hasAuth0 ? 1 : 0,
+    onelogin:     hasOneLogin ? 1 : standardIdP,
+    forgerock:    0,
+    license_requirement: 'unclear',
+    implementation_notes: `Verified from vendor support page: ${url}`,
+    source_urls: JSON.stringify([{ title: `${appName.trim()} SSO Documentation`, url }]),
+    confidence: 80,
+    import_source: 'manual',
+    external_id: null,
+    logo_url: null,
+  }
+
+  try {
+    const result = upsertApp(db, app)
+    res.json({ success: true, app_key: app.app_key, ...result })
+  } catch (e) {
+    res.status(500).json({ error: String(e) })
+  }
+})
+
 // Import status
 router.get('/import/status', (_req, res) => {
   const status = getImportStatus()
