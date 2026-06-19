@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Trash2, ChevronLeft, ChevronRight, Search, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Trash2, Pencil, ChevronLeft, ChevronRight, Search, AlertTriangle, CheckCircle2, X } from 'lucide-react'
 import { ImportStatus } from '../components/sso/ImportStatus'
 import { ConfidenceBadge } from '../components/sso/ConfidenceBadge'
 
@@ -23,6 +23,23 @@ interface AdminAppsResponse {
   pages: number
 }
 
+interface EditForm {
+  app_name: string
+  vendor: string
+  description: string
+  oidc: boolean
+  oauth2: boolean
+  saml2: boolean
+  scim: boolean
+  ldap: boolean
+  kerberos: boolean
+  ws_federation: boolean
+  cas: boolean
+  license_requirement: string
+  implementation_notes: string
+  confidence: number
+}
+
 const SOURCE_LABELS: Record<string, string> = {
   manual: 'Manual',
   'entra-docs': 'Entra Docs',
@@ -37,6 +54,17 @@ const SOURCE_COLORS: Record<string, string> = {
   keycloak: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
 }
 
+const PROTOCOL_FIELDS: Array<{ key: keyof EditForm; label: string }> = [
+  { key: 'saml2', label: 'SAML 2.0' },
+  { key: 'oidc', label: 'OIDC' },
+  { key: 'oauth2', label: 'OAuth 2.0' },
+  { key: 'scim', label: 'SCIM' },
+  { key: 'ldap', label: 'LDAP' },
+  { key: 'kerberos', label: 'Kerberos' },
+  { key: 'ws_federation', label: 'WS-Federation' },
+  { key: 'cas', label: 'CAS' },
+]
+
 async function fetchAdminApps(page: number, source: string, q: string): Promise<AdminAppsResponse> {
   const params = new URLSearchParams({ page: String(page) })
   if (source) params.set('source', source)
@@ -46,11 +74,29 @@ async function fetchAdminApps(page: number, source: string, q: string): Promise<
   return res.json()
 }
 
+async function fetchFullApp(appKey: string): Promise<any> {
+  const res = await fetch(`/api/sso/apps/${encodeURIComponent(appKey)}`)
+  if (!res.ok) throw new Error('Failed to load app')
+  return res.json()
+}
+
 async function deleteApp(appKey: string): Promise<void> {
   const res = await fetch(`/api/sso/apps/${encodeURIComponent(appKey)}`, { method: 'DELETE' })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error((err as any).error || 'Delete failed')
+  }
+}
+
+async function saveApp(appKey: string, form: EditForm): Promise<void> {
+  const res = await fetch(`/api/sso/apps/${encodeURIComponent(appKey)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(form),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error((err as any).error || 'Save failed')
   }
 }
 
@@ -64,6 +110,12 @@ export default function Admin() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null)
   const [confirmKey, setConfirmKey] = useState<string | null>(null)
+
+  // Edit modal state
+  const [editApp, setEditApp] = useState<AdminApp | null>(null)
+  const [editForm, setEditForm] = useState<EditForm | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-apps', page, sourceFilter, search],
@@ -102,6 +154,58 @@ export default function Admin() {
     } finally {
       setDeleting(null)
     }
+  }
+
+  const handleEdit = async (app: AdminApp) => {
+    setEditError(null)
+    try {
+      const full = await fetchFullApp(app.app_key)
+      setEditApp(app)
+      setEditForm({
+        app_name: full.app_name || '',
+        vendor: full.vendor || '',
+        description: full.description || '',
+        oidc: !!full.oidc,
+        oauth2: !!full.oauth2,
+        saml2: !!full.saml2,
+        scim: !!full.scim,
+        ldap: !!full.ldap,
+        kerberos: !!full.kerberos,
+        ws_federation: !!full.ws_federation,
+        cas: !!full.cas,
+        license_requirement: full.license_requirement || 'unclear',
+        implementation_notes: full.implementation_notes || '',
+        confidence: full.confidence ?? 80,
+      })
+    } catch (e) {
+      setDeleteError(String(e))
+    }
+  }
+
+  const handleSave = async () => {
+    if (!editApp || !editForm) return
+    setSaving(true)
+    setEditError(null)
+    try {
+      await saveApp(editApp.app_key, editForm)
+      setDeleteSuccess(`"${editForm.app_name}" updated`)
+      setEditApp(null)
+      setEditForm(null)
+      queryClient.invalidateQueries({ queryKey: ['admin-apps'] })
+      queryClient.invalidateQueries({ queryKey: ['sso-apps'] })
+    } catch (e) {
+      setEditError(String(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const field = (key: keyof EditForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setEditForm(f => f ? { ...f, [key]: e.target.value } : f)
+  }
+
+  const toggle = (key: keyof EditForm) => () => {
+    setEditForm(f => f ? { ...f, [key]: !f[key as keyof EditForm] } : f)
   }
 
   return (
@@ -241,13 +345,22 @@ export default function Admin() {
                             </button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => handleDelete(app)}
-                            className="p-1.5 text-gray-600 hover:text-red-400 transition-colors rounded"
-                            title="Delete app"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1 justify-end">
+                            <button
+                              onClick={() => handleEdit(app)}
+                              className="p-1.5 text-gray-600 hover:text-blue-400 transition-colors rounded"
+                              title="Edit app"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(app)}
+                              className="p-1.5 text-gray-600 hover:text-red-400 transition-colors rounded"
+                              title="Delete app"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         )
                       )}
                     </td>
@@ -283,6 +396,102 @@ export default function Admin() {
           </div>
         )}
       </section>
+
+      {/* Edit modal */}
+      {editApp && editForm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[hsl(222,84%,7%)] border border-[hsl(217,32%,17%)] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-[hsl(217,32%,17%)]">
+              <h2 className="text-sm font-semibold text-white">Edit App</h2>
+              <button onClick={() => { setEditApp(null); setEditForm(null) }} className="p-1.5 hover:bg-[hsl(217,32%,17%)] rounded-lg transition-colors">
+                <X className="h-4 w-4 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {editError && (
+                <div className="flex items-center gap-2 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-xs text-red-400">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" /> {editError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">App Name *</label>
+                <input value={editForm.app_name} onChange={field('app_name')}
+                  className="w-full px-3 py-2 bg-[hsl(222,84%,9%)] border border-[hsl(217,32%,20%)] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Vendor</label>
+                  <input value={editForm.vendor} onChange={field('vendor')}
+                    className="w-full px-3 py-2 bg-[hsl(222,84%,9%)] border border-[hsl(217,32%,20%)] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">License</label>
+                  <select value={editForm.license_requirement} onChange={field('license_requirement')}
+                    className="w-full px-3 py-2 bg-[hsl(222,84%,9%)] border border-[hsl(217,32%,20%)] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="unclear">Unclear</option>
+                    <option value="standard">Standard / All Plans</option>
+                    <option value="enterprise">Enterprise Required</option>
+                    <option value="addon">Add-on / Plugin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Description</label>
+                <textarea value={editForm.description} onChange={field('description')} rows={2}
+                  className="w-full px-3 py-2 bg-[hsl(222,84%,9%)] border border-[hsl(217,32%,20%)] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-2">Protocols</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {PROTOCOL_FIELDS.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={toggle(key)}
+                      className={`px-2 py-1.5 text-xs rounded-md border transition-colors ${
+                        editForm[key]
+                          ? 'bg-blue-600/20 border-blue-500/50 text-blue-300'
+                          : 'bg-[hsl(217,32%,12%)] border-[hsl(217,32%,17%)] text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Implementation Notes</label>
+                <textarea value={editForm.implementation_notes} onChange={field('implementation_notes')} rows={3}
+                  className="w-full px-3 py-2 bg-[hsl(222,84%,9%)] border border-[hsl(217,32%,20%)] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Confidence ({editForm.confidence}%)</label>
+                <input type="range" min={0} max={100} value={editForm.confidence}
+                  onChange={e => setEditForm(f => f ? { ...f, confidence: Number(e.target.value) } : f)}
+                  className="w-full accent-blue-500" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 p-5 border-t border-[hsl(217,32%,17%)]">
+              <button onClick={() => { setEditApp(null); setEditForm(null) }}
+                className="px-4 py-2 text-gray-400 hover:text-white text-sm transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleSave} disabled={saving}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50">
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

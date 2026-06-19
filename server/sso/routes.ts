@@ -158,6 +158,34 @@ router.post('/lookup-url/save', async (req, res) => {
   }
 })
 
+// Edit app — only manual entries allowed
+router.patch('/apps/:key', (req, res) => {
+  const app = db.prepare('SELECT app_key, import_source FROM sso_apps WHERE app_key = ?').get(req.params.key) as { app_key: string; import_source: string } | undefined
+  if (!app) return res.status(404).json({ error: 'App not found' })
+  if (app.import_source !== 'manual') return res.status(403).json({ error: 'Only manually created apps can be edited' })
+
+  const { app_name, vendor, description, oidc, oauth2, saml2, scim, ldap, kerberos, ws_federation, cas, license_requirement, implementation_notes, confidence } = req.body || {}
+  if (!app_name || typeof app_name !== 'string' || app_name.trim().length < 1) {
+    return res.status(400).json({ error: 'app_name is required' })
+  }
+
+  db.prepare(`UPDATE sso_apps SET
+    app_name = ?, vendor = ?, description = ?,
+    oidc = ?, oauth2 = ?, saml2 = ?, scim = ?, ldap = ?,
+    kerberos = ?, ws_federation = ?, cas = ?,
+    license_requirement = ?, implementation_notes = ?,
+    confidence = ?, updated_at = unixepoch()
+    WHERE app_key = ?`).run(
+    app_name.trim(), vendor || null, description || null,
+    oidc ? 1 : 0, oauth2 ? 1 : 0, saml2 ? 1 : 0, scim ? 1 : 0, ldap ? 1 : 0,
+    kerberos ? 1 : 0, ws_federation ? 1 : 0, cas ? 1 : 0,
+    license_requirement || 'unclear', implementation_notes || null,
+    Math.min(100, Math.max(0, Number(confidence) || 80)),
+    req.params.key
+  )
+  res.json({ success: true })
+})
+
 // Delete app — only manual entries allowed
 router.delete('/apps/:key', (req, res) => {
   const app = db.prepare('SELECT app_key, import_source FROM sso_apps WHERE app_key = ?').get(req.params.key) as { app_key: string; import_source: string } | undefined
