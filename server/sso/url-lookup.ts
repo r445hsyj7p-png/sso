@@ -128,6 +128,34 @@ function findExcerpts(text: string, pattern: RegExp, contextChars = 150): string
   return excerpts
 }
 
+// For Zendesk Help Center URLs, extract article ID and call the public JSON API
+function buildZendeskApiUrl(url: string): string | null {
+  const m = url.match(/^(https?:\/\/[^/]+)\/hc\/[^/]+\/articles\/(\d+)/)
+  if (!m) return null
+  return `${m[1]}/api/v2/help_center/articles/${m[2]}.json`
+}
+
+async function fetchZendeskArticle(url: string): Promise<string | null> {
+  const apiUrl = buildZendeskApiUrl(url)
+  if (!apiUrl) return null
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) return null
+    const data = await res.json() as { article?: { title?: string; body?: string } }
+    const article = data?.article
+    if (!article) return null
+    // Return as minimal HTML so existing parser works
+    const title = article.title ? `<title>${article.title}</title>` : ''
+    const body = article.body || ''
+    return `<html><head>${title}</head><body>${body}</body></html>`
+  } catch {
+    return null
+  }
+}
+
 export async function lookupUrl(url: string): Promise<URLLookupResult> {
   const result: URLLookupResult = {
     url,
@@ -143,19 +171,35 @@ export async function lookupUrl(url: string): Promise<URLLookupResult> {
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; SSO-Capability-Checker/1.0)',
-        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1',
       },
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(15_000),
     })
 
     if (!res.ok) {
-      result.error = `HTTP ${res.status}: ${res.statusText}`
-      return result
+      // Try Zendesk API fallback for Help Center articles
+      const zendeskHtml = await fetchZendeskArticle(url)
+      if (zendeskHtml) {
+        html = zendeskHtml
+      } else if (res.status === 403) {
+        result.error = `This page blocks server-side requests (HTTP 403). Workaround: open the page in your browser, select all text (Ctrl+A → Ctrl+C), then paste it into the "Paste text" tab in the Analyzer.`
+        return result
+      } else {
+        result.error = `HTTP ${res.status}: ${res.statusText}`
+        return result
+      }
+    } else {
+      html = await res.text()
     }
-
-    html = await res.text()
   } catch (e) {
     result.error = `Fetch failed: ${String(e)}`
     return result
